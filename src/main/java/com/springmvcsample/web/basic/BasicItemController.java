@@ -5,8 +5,8 @@ import com.springmvcsample.repository.ItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
@@ -24,8 +24,95 @@ public class BasicItemController {
         model.addAttribute("items", items);
         return "basic/items";
     }
-    
-    // 테스트 데이터
+
+    @GetMapping("/{itemId}")
+    public String item(@PathVariable long itemId, Model model) {
+        Item item = itemRepository.findById(itemId);
+        model.addAttribute("item", item);
+        return "basic/item";
+    }
+
+    @GetMapping("/add")
+    public String addForm() {
+        return "basic/addForm";
+    }
+
+    @PostMapping("/add1")
+    public String addItemV1(@RequestParam String itemName,
+                            @RequestParam int price,
+                            @RequestParam Integer quantity,
+                            Model model) {
+        Item item = new Item();
+        item.setItemName(itemName);
+        item.setPrice(price);
+        item.setQuantity(quantity);
+
+        itemRepository.save(item);
+
+        model.addAttribute("item", item);
+
+        return "basic/item";
+    }
+
+    @PostMapping("/add2")
+    public String addItemV2(@ModelAttribute("item") Item item) {
+        itemRepository.save(item);
+        //model.addAttribute("item", item); //자동 추가, 생략 가능
+
+        return "basic/item";
+    }
+
+    /**
+     * @ModelAttribute name 생략 가능
+     * model.addAttribute(item); 자동 추가, 생략 가능
+     * 생략시 model에 저장되는 name은 클래스명 첫글자만 소문자로 등록 Item -> item
+     */
+    @PostMapping("/add3")
+    public String addItemV3(@ModelAttribute Item item) {
+        itemRepository.save(item);
+
+        return "basic/item";
+    }
+
+    /**
+     * @ModelAttribute 자체 생략 가능
+     * model.addAttribute(item) 자동 추가
+     */
+    @PostMapping("/add4")
+    public String addItemV4(Item item) {
+        itemRepository.save(item);
+
+        return "redirect:/basic/items/" + item.getId();
+        //return "basic/item"; 새로고침시 중복등록됨 PRG 필요
+    }
+
+    /**
+     * RedirectAttributes
+     */
+    @PostMapping("/add")
+    public String addItemV6(Item item, RedirectAttributes redirectAttributes) {
+        Item savedItem = itemRepository.save(item);
+        redirectAttributes.addAttribute("itemId", savedItem.getId());
+        redirectAttributes.addAttribute("status", true);
+
+        return "redirect:/basic/items/{itemId}";
+    }
+
+        @GetMapping("/{itemId}/edit")
+    public String editForm(@PathVariable Long itemId, Model model) {
+        Item item = itemRepository.findById(itemId);
+        model.addAttribute("item", item);
+
+        return "basic/editForm";
+    }
+
+    @PostMapping("/{itemId}/edit")
+    public String edit(@PathVariable Long itemId, @ModelAttribute Item item) {
+        itemRepository.update(itemId, item);
+        return "redirect:/basic/items/{itemId}";
+    }
+
+        // 테스트 데이터
     @PostConstruct
     public void init() {
         itemRepository.save(new Item("itemA", 10000, 10));
